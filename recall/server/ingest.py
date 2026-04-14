@@ -22,6 +22,23 @@ from typing import Any
 
 logger = logging.getLogger("recall.ingest")
 
+_DETAIL_PAYLOAD_KEYS = (
+    "source_dataset",
+    "source_trajectory_id",
+    "source_example_id",
+    "instance_id",
+    "repo",
+    "run_id",
+    "resolved",
+    "exit_status",
+    "gen_tests_correct",
+    "pred_passes_gen_tests",
+    "has_model_patch",
+    "has_git_patch",
+    "has_apply_patch_output",
+    "test_result_summary",
+)
+
 
 def _build_embedding_text(trajectory: dict[str, Any]) -> str:
     """
@@ -91,7 +108,7 @@ def _build_payload(trajectory: dict[str, Any]) -> dict[str, Any]:
     """
     details = trajectory.get("details", {})
 
-    return {
+    payload = {
         # Searchable / filterable fields
         "task_goal": details.get("task_goal", ""),
         "tools_available": details.get("tools_available", []),
@@ -109,6 +126,14 @@ def _build_payload(trajectory: dict[str, Any]) -> dict[str, Any]:
         # Number of ADP items (useful for quick filtering)
         "adp_item_count": len(trajectory.get("content", [])),
     }
+
+    for key in _DETAIL_PAYLOAD_KEYS:
+        value = details.get(key)
+        if value is None:
+            continue
+        payload[key] = value
+
+    return payload
 
 
 def ingest_trajectory_file(
